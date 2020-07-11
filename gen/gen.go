@@ -26,9 +26,8 @@ type canonicalStringEnum struct {
 	StructName          string
 	StructNameLowerCase string
 
-	IndexKeyName  string
-	IndexKeyValue string
-	Values        map[string]string
+	IndexKeyName string
+	Values       map[string]string
 
 	TestCaseName         string
 	TestCaseKey          string
@@ -37,53 +36,67 @@ type canonicalStringEnum struct {
 	TestCaseBinaryLen    int
 	TestCaseBSONLen      int
 
-	ImportPath string
-	FileName   string
-	Timestamp  string
-	Package    string
+	ImportPath          string
+	FileName            string
+	Timestamp           string
+	Package             string
+	OmitGeneratedNotice bool
 }
 
-func GenerateEnumTypes(currentPackagePath string, enums ...StringEnumDefinition) {
-	path := "."
-	tokens := strings.Split(currentPackagePath, "/")
+func GenerateEnumTypes(packageFilePath string, packageImportPath string, omitGeneratedNotice bool, enums ...StringEnumDefinition) {
+	// Get package name from import path
+	// i.e: github.com/lggomez/go-enum/example -> example
+	tokens := strings.Split(packageImportPath, "/")
 	packageName := tokens[len(tokens)-1]
-	canonicalEnums := processEnumerations(currentPackagePath, packageName, enums)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Panic(err.Error())
+	// Convert enum definitions into canonical definitions with full metadata for code generation
+	canonicalEnums := processEnumerations(packageImportPath, packageName, omitGeneratedNotice, enums)
+
+	if _, err := os.Stat(packageFilePath); os.IsNotExist(err) {
+		if dirErr := os.Mkdir(packageFilePath, os.ModePerm); dirErr != nil {
+			log.Panic("could not create package - ", err.Error())
+		}
 	}
 
+	// Traverse enums for code generation
 	for i, canonicalEnum := range canonicalEnums {
+		// Generate base enum struct and its codecs
+		// This is a single time pass that must be done on the first iteration
 		if i == 0 {
 			if err := generateFileFromTemplate(canonicalEnum,
 				templates.EnumTemplate,
-				fmt.Sprintf("%s%senum.go", path, string(os.PathSeparator))); err != nil {
+				fmt.Sprintf("%s%senum.go", packageFilePath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 
 			if err := generateFileFromTemplate(canonicalEnum,
 				templates.EnumCodecsTemplate,
-				fmt.Sprintf("%s%senum_codecs.go", path, string(os.PathSeparator))); err != nil {
+				fmt.Sprintf("%s%senum_codecs.go", packageFilePath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 		}
 
+		// Generate specific enum implementation file
 		if err := generateFileFromTemplate(canonicalEnum,
 			templates.EnumImplTemplate,
-			fmt.Sprintf("%s%s%s.go", path, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
+			fmt.Sprintf("%s%s%s.go", packageFilePath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 			log.Panic(err.Error())
 		}
 
+		// Generate specific enum implementation test file
 		if err := generateFileFromTemplate(canonicalEnum,
 			templates.EnumImplTestTemplate,
-			fmt.Sprintf("%s%s%s_test.go", path, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
+			fmt.Sprintf("%s%s%s_test.go", packageFilePath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 			log.Panic(err.Error())
 		}
 
+		// Generate codecs test file
+		// This is a single time pass that must be done on the first iteration,
+		// and after the first specific enum is generated since it uses it for tests
 		if i == 0 {
 			if err := generateFileFromTemplate(canonicalEnum,
 				templates.EnumCodecsTestTemplate,
-				fmt.Sprintf("%s%senum_codecs_test.go", path, string(os.PathSeparator))); err != nil {
+				fmt.Sprintf("%s%senum_codecs_test.go", packageFilePath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 		}
@@ -111,7 +124,7 @@ func generateFileFromTemplate(canonicalEnum canonicalStringEnum, templateString,
 	return nil
 }
 
-func processEnumerations(importPath string, packageName string, enums []StringEnumDefinition) []canonicalStringEnum {
+func processEnumerations(importPath string, packageName string, omitGeneratedNotice bool, enums []StringEnumDefinition) []canonicalStringEnum {
 	canonicalEnums := make([]canonicalStringEnum, len(enums))
 
 	for i, e := range enums {
@@ -124,12 +137,12 @@ func processEnumerations(importPath string, packageName string, enums []StringEn
 			StructName:           upperCamelName,
 			StructNameLowerCase:  lowerCamelName,
 			IndexKeyName:         lowerCamelName + "Key",
-			IndexKeyValue:        upperCamelName,
 			Values:               map[string]string{},
 			TestCaseKey:          lowerCamelName,
-			TestCaseInvalidValue: uuid.New().String(),
+			TestCaseInvalidValue: uuid.New().String(), // Set an unique random value to prevent collisions
 			FileName:             strcase.SnakeCase(e.Name),
 			Timestamp:            time.Now().String(),
+			OmitGeneratedNotice:  omitGeneratedNotice,
 		}
 
 		for i, value := range e.Values {
