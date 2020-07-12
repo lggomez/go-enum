@@ -17,7 +17,7 @@ func main() {
 			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
 			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
 			OmitGeneratedNotice:  false,
-			OmitTests:            true,
+			OmitTests:            false,
 		},
 		generator.StringEnumDefinition{
 			Name:   "Ghost",
