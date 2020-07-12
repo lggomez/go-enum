@@ -27,12 +27,17 @@ type StringEnumDefinition struct {
 // Options defined the options to be passed to the generator to configure
 // certain aspects of the code generation
 type Options struct {
+	// Filesystem path of the directory corresponding to the package to be used or created
 	PackageDirectoryPath string
+	// Import path of the package to be used or created. It must be a valid path according to the working module structure
 	PackageImportPath    string
+	// Whether to omit the generated code header on files. Default value is false
 	OmitGeneratedNotice  bool
+	// Whether to omit tests for generated code. Default value is false
 	OmitTests            bool
 }
 
+// canonicalStringEnum contains the full metadata required to execute the code templates and generate the specific implementations
 type canonicalStringEnum struct {
 	StructName          string
 	StructNameLowerCase string
