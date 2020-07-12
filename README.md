@@ -4,7 +4,7 @@
 
 # go-enum -  Typesafe enum generation in golang
 
-This package provides a scaffolding mechanism to generate enum types based on string values (in contrast with the _iota_ based integer enums)
+This package provides a scaffolding mechanism to generate enum types based on string values, in contrast with the _iota_ based integer constants enum pattern commonly used in Go
 
 Use this package if you wish to have type support for:
 * Traversable enumerations
