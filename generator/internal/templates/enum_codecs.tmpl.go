@@ -5,8 +5,8 @@ var EnumCodecsTemplate = `{{- if not .OmitGeneratedNotice}}
 // This file was generated at
 // {{ .Timestamp }}
 // by go-enum
-
 {{- end }}
+
 package {{ .Package }}
 
 import (
