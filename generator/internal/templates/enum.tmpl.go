@@ -48,6 +48,6 @@ func fromValue(value string, ignoreCase bool, key string) (stringEnumValue, bool
 	return stringEnumValue{}, false
 }
 
-func (e stringEnumValue) IsZero() bool { return e.value == "" && e.key == "" }
+func (e stringEnumValue) IsUndefined() bool { return e.value == "" && e.key == "" }
 
 `

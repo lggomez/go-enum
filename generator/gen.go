@@ -1,4 +1,4 @@
-package gen
+package generator
 
 import (
 	"bytes"
@@ -13,13 +13,24 @@ import (
 	"github.com/stoewer/go-strcase"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/lggomez/go-enum/gen/internal"
-	"github.com/lggomez/go-enum/gen/internal/templates"
+	"github.com/lggomez/go-enum/generator/internal"
+	"github.com/lggomez/go-enum/generator/internal/templates"
 )
 
+// StringEnumDefinition is the basic name:values definition of an enumeration
+// As the name implies, this is for string enumerations only
 type StringEnumDefinition struct {
 	Name   string
 	Values []string
+}
+
+// Options defined the options to be passed to the generator to configure
+// certain aspects of the code generation
+type Options struct {
+	PackageDirectoryPath string
+	PackageImportPath    string
+	OmitGeneratedNotice  bool
+	OmitTests            bool
 }
 
 type canonicalStringEnum struct {
@@ -43,17 +54,17 @@ type canonicalStringEnum struct {
 	OmitGeneratedNotice bool
 }
 
-func GenerateEnumTypes(packageFilePath string, packageImportPath string, omitGeneratedNotice bool, enums ...StringEnumDefinition) {
+func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 	// Get package name from import path
 	// i.e: github.com/lggomez/go-enum/example -> example
-	tokens := strings.Split(packageImportPath, "/")
+	tokens := strings.Split(options.PackageImportPath, "/")
 	packageName := tokens[len(tokens)-1]
 
 	// Convert enum definitions into canonical definitions with full metadata for code generation
-	canonicalEnums := processEnumerations(packageImportPath, packageName, omitGeneratedNotice, enums)
+	canonicalEnums := processEnumerations(options.PackageImportPath, packageName, options, enums)
 
-	if _, err := os.Stat(packageFilePath); os.IsNotExist(err) {
-		if dirErr := os.Mkdir(packageFilePath, os.ModePerm); dirErr != nil {
+	if _, err := os.Stat(options.PackageDirectoryPath); os.IsNotExist(err) {
+		if dirErr := os.Mkdir(options.PackageDirectoryPath, os.ModePerm); dirErr != nil {
 			log.Panic("could not create package - ", err.Error())
 		}
 	}
@@ -65,13 +76,13 @@ func GenerateEnumTypes(packageFilePath string, packageImportPath string, omitGen
 		if i == 0 {
 			if err := generateFileFromTemplate(canonicalEnum,
 				templates.EnumTemplate,
-				fmt.Sprintf("%s%senum.go", packageFilePath, string(os.PathSeparator))); err != nil {
+				fmt.Sprintf("%s%senum.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 
 			if err := generateFileFromTemplate(canonicalEnum,
 				templates.EnumCodecsTemplate,
-				fmt.Sprintf("%s%senum_codecs.go", packageFilePath, string(os.PathSeparator))); err != nil {
+				fmt.Sprintf("%s%senum_codecs.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 		}
@@ -79,31 +90,34 @@ func GenerateEnumTypes(packageFilePath string, packageImportPath string, omitGen
 		// Generate specific enum implementation file
 		if err := generateFileFromTemplate(canonicalEnum,
 			templates.EnumImplTemplate,
-			fmt.Sprintf("%s%s%s.go", packageFilePath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
+			fmt.Sprintf("%s%s%s.go", options.PackageDirectoryPath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 			log.Panic(err.Error())
 		}
 
-		// Generate specific enum implementation test file
-		if err := generateFileFromTemplate(canonicalEnum,
-			templates.EnumImplTestTemplate,
-			fmt.Sprintf("%s%s%s_test.go", packageFilePath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
-			log.Panic(err.Error())
-		}
-
-		// Generate codecs test file
-		// This is a single time pass that must be done on the first iteration,
-		// and after the first specific enum is generated since it uses it for tests
-		if i == 0 {
+		if !options.OmitTests {
+			// Generate specific enum implementation test file
 			if err := generateFileFromTemplate(canonicalEnum,
-				templates.EnumCodecsTestTemplate,
-				fmt.Sprintf("%s%senum_codecs_test.go", packageFilePath, string(os.PathSeparator))); err != nil {
+				templates.EnumImplTestTemplate,
+				fmt.Sprintf("%s%s%s_test.go", options.PackageDirectoryPath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 				log.Panic(err.Error())
+			}
+
+			// Generate codecs test file
+			// This is a single time pass that must be done on the first iteration,
+			// and after the first specific enum is generated since it uses it for tests
+			if i == 0 {
+				if err := generateFileFromTemplate(canonicalEnum,
+					templates.EnumCodecsTestTemplate,
+					fmt.Sprintf("%s%senum_codecs_test.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
+					log.Panic(err.Error())
+				}
 			}
 		}
 	}
 }
 
 func generateFileFromTemplate(canonicalEnum canonicalStringEnum, templateString, destinationPath string) error {
+	// Generate code from template and save it to buffer
 	src := &bytes.Buffer{}
 	enumTemplate := template.Must(template.New(destinationPath).Parse(templateString))
 	err := enumTemplate.Execute(src, canonicalEnum)
@@ -111,11 +125,13 @@ func generateFileFromTemplate(canonicalEnum canonicalStringEnum, templateString,
 		log.Panic(err.Error())
 	}
 
+	// Run go fmt formatting into buffered source
 	formattedSrc, err := internal.FormatSource(src)
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
+	// Write generated source to disk file
 	err = internal.SaveFile(destinationPath, formattedSrc)
 	if err != nil {
 		log.Panic(err.Error())
@@ -124,7 +140,7 @@ func generateFileFromTemplate(canonicalEnum canonicalStringEnum, templateString,
 	return nil
 }
 
-func processEnumerations(importPath string, packageName string, omitGeneratedNotice bool, enums []StringEnumDefinition) []canonicalStringEnum {
+func processEnumerations(importPath string, packageName string, options Options, enums []StringEnumDefinition) []canonicalStringEnum {
 	canonicalEnums := make([]canonicalStringEnum, len(enums))
 
 	for i, e := range enums {
@@ -142,7 +158,7 @@ func processEnumerations(importPath string, packageName string, omitGeneratedNot
 			TestCaseInvalidValue: uuid.New().String(), // Set an unique random value to prevent collisions
 			FileName:             strcase.SnakeCase(e.Name),
 			Timestamp:            time.Now().String(),
-			OmitGeneratedNotice:  omitGeneratedNotice,
+			OmitGeneratedNotice:  options.OmitGeneratedNotice,
 		}
 
 		for i, value := range e.Values {
