@@ -154,11 +154,13 @@ func Test{{ .StructName }}_EmptyValues(t *testing.T) {
 
 		v2 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v2)
-		require.NoError(t, err) // empty field
+		require.NoError(t, err)
+		require.True(t, v2.TestValue.IsEmpty())
 
 		v3 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v3)
 		require.NoError(t, err)
+		require.True(t, v3.TestValue.IsEmpty())
 	})
 	t.Run("PtrField", func(t *testing.T) {
 		v := foo{{ .StructName }}Ptr{TestValue: nil}
@@ -168,12 +170,18 @@ func Test{{ .StructName }}_EmptyValues(t *testing.T) {
 
 		v2 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v2)
-		require.NoError(t, err) // empty field
+		require.NoError(t, err)
+		require.True(t, v2.TestValue.IsEmpty())
 
 		v3 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v3)
 		require.NoError(t, err)
+		require.True(t, v3.TestValue.IsEmpty())
 	})
+}
+
+func Test{{ .StructName }}_UndefinedValue(t *testing.T) {
+	require.True(t, {{ .Package }}.{{ .StructName }}{}.IsUndefined())
 }
 
 func Test{{ .StructName }}_ForEach(t *testing.T) {
@@ -183,6 +191,11 @@ func Test{{ .StructName }}_ForEach(t *testing.T) {
 		value, found := {{ .Package }}.{{ .StructName }}FromValue(enumValue.String(), false)
 		assert.True(t, found)
 		assert.True(t, value == enumValue)
+
+		assert.True(t, enumValue.Equals(value.String()))
+		assert.True(t, enumValue.EqualsIgnoreCase(value.String()))
+		assert.True(t, value.Equals(enumValue.String()))
+		assert.True(t, value.EqualsIgnoreCase(enumValue.String()))
 	})
 	assert.EqualValues(t, {{ .Package }}.Enum{{ .StructName }}.Len(), j)
 }

@@ -58,8 +58,13 @@ func (e stringEnumValue) EqualsIgnoreCase(s string) bool {
 	return strings.ToUpper(e.value) == strings.ToUpper(s)
 }
 
-// IsUndefined returns whether the value is an fully initialized enum value or an undefined one (MyEnumType{}).
+// IsEmpty returns whether the value is empty.
 // Such values are permitted in order to support empty values on compile and (un)marshaling time without pointer fields 
-func (e stringEnumValue) IsUndefined() bool { return e.value == "" && e.key == "" }
+func (e stringEnumValue) IsEmpty() bool { return e.value == "" }
+
+
+// IsUndefined returns whether the value is manually initialized, thus being undefined (MyEnumType{}).
+// Such values are permitted in order to support empty values on compile and (un)marshaling time without pointer fields
+func (e stringEnumValue) IsUndefined() bool { return e.IsEmpty() && e.key == "" }
 
 `
