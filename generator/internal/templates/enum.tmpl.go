@@ -48,14 +48,18 @@ func fromValue(value string, ignoreCase bool, key string) (stringEnumValue, bool
 	return stringEnumValue{}, false
 }
 
+// Equals does a case sensitive comparison against a string value
 func (e stringEnumValue) Equals(s string) bool {
 	return e.value == s
 }
 
+// Equals does a case insensitive comparison against a string value
 func (e stringEnumValue) EqualsIgnoreCase(s string) bool {
 	return strings.ToUpper(e.value) == strings.ToUpper(s)
 }
 
+// IsUndefined returns whether the value is an fully initialized enum value or an undefined one (MyEnumType{}).
+// Such values are permitted in order to support empty values on compile and (un)marshaling time without pointer fields 
 func (e stringEnumValue) IsUndefined() bool { return e.value == "" && e.key == "" }
 
 `

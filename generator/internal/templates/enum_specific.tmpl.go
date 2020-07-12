@@ -31,6 +31,7 @@ func init() {
  * Type aliases and declarations
  *
  **/
+
 type {{ .StructName }} struct {
 	stringEnumValue
 }
@@ -62,6 +63,7 @@ func (e {{ .StructNameLowerCase }}Enum) Len() int {
  * Private value index, key
  *
  **/
+
 var (
 	{{ .StructNameLowerCase }}ValueIndex = valueIndex{
         {{- range $value := .Values }}
@@ -76,6 +78,7 @@ var (
  * Public enumeration
  *
  **/
+
 var (
 	{{- $save := . }}
 	{{- range $key, $value := .Values }}
@@ -94,6 +97,7 @@ var (
  * Proxy methods for enum unmarshaling
  *
  **/
+
 func (e *{{ .StructName }}) UnmarshalJSON(data []byte) error {
 	e.key = {{ .IndexKeyName }}
 	return e.stringEnumValue.UnmarshalJSON(data)
