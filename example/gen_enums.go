@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	// Generate enums on an "enum" subpackage
+	// This example generates the 'Ghost' and 'Thing' enums on an 'enum' subpackage
 	// To generate them on the current package, just use the current directory path (".")
 	generator.GenerateEnumTypes(
 		generator.Options{

@@ -17,7 +17,7 @@ import (
 	"github.com/lggomez/go-enum/generator/internal/templates"
 )
 
-// StringEnumDefinition is the basic name:values definition of an enumeration
+// StringEnumDefinition is the basic name:values definition of an enumeration.
 // As the name implies, this is for string enumerations only
 type StringEnumDefinition struct {
 	Name   string
@@ -54,6 +54,7 @@ type canonicalStringEnum struct {
 	OmitGeneratedNotice bool
 }
 
+// GenerateEnumTypes scaffolds enum types for the given options anddefinitions
 func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 	// Get package name from import path
 	// i.e: github.com/lggomez/go-enum/example -> example
@@ -157,7 +158,7 @@ func processEnumerations(importPath string, packageName string, options Options,
 			TestCaseKey:          lowerCamelName,
 			TestCaseInvalidValue: uuid.New().String(), // Set an unique random value to prevent collisions
 			FileName:             strcase.SnakeCase(e.Name),
-			Timestamp:            time.Now().String(),
+			Timestamp:            time.Now().Format(time.RFC3339),
 			OmitGeneratedNotice:  options.OmitGeneratedNotice,
 		}
 

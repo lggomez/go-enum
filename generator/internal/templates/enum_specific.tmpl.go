@@ -42,9 +42,19 @@ func {{ .StructName }}FromValue(value string, ignoreCase bool) ({{ .StructName }
 
 type {{ .StructNameLowerCase }}List []{{ .StructName }}
 
-// {{ .StructName }}Enum is a type and memory safe iterable enumeration of {{ .StructName }} values
-type {{ .StructName }}Enum struct {
+// {{ .StructNameLowerCase }}Enum is a type and memory safe iterable enumeration of {{ .StructName }} values
+type {{ .StructNameLowerCase }}Enum struct {
 	{{ .StructNameLowerCase }}List
+}
+
+func (e {{ .StructNameLowerCase }}Enum) ForEach(f func(int, {{ .StructName }})) {
+	for i, e := range e.{{ .StructNameLowerCase }}List {
+		f(i, e)
+	}
+}
+
+func (e {{ .StructNameLowerCase }}Enum) Len() int {
+	return len(e.{{ .StructNameLowerCase }}List)
 }
 
 /**
@@ -72,7 +82,7 @@ var (
 		{{ $save.StructName }}{{ $key }} = {{ $save.StructName }}{stringEnumValue{"{{ $value }}", {{ $save.IndexKeyName }} }}
 	{{- end }}
 
-	Enum{{ $save.StructName }} = {{ $save.StructName }}Enum{ {{ $save.StructNameLowerCase }}List{
+	Enum{{ $save.StructName }} = {{ $save.StructNameLowerCase }}Enum{ {{ $save.StructNameLowerCase }}List{
 	{{- range $key, $value := .Values }}
 		{{ $save.StructName }}{{ $key }},
 	{{- end }}
