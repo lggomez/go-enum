@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -30,11 +31,15 @@ type Options struct {
 	// Filesystem path of the directory corresponding to the package to be used or created
 	PackageDirectoryPath string
 	// Import path of the package to be used or created. It must be a valid path according to the working module structure
-	PackageImportPath    string
+	PackageImportPath string
 	// Whether to omit the generated code header on files. Default value is false
-	OmitGeneratedNotice  bool
+	OmitGeneratedNotice bool
 	// Whether to omit tests for generated code. Default value is false
-	OmitTests            bool
+	OmitTests bool
+	// Whether to omit generated source code formatting, which also detects compilation errors. Default value is false
+	OmitSourceFormatting bool
+	// Whether to omit field name sanitization, which prevents invalid name qualifiers during code generation. Default value is false
+	OmitNameSanitization bool
 }
 
 // canonicalStringEnum contains the full metadata required to execute the code templates and generate the specific implementations
@@ -61,6 +66,10 @@ type canonicalStringEnum struct {
 
 // GenerateEnumTypes scaffolds enum types for the given options anddefinitions
 func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
+	if len(enums) == 0 {
+		log.Panic("generator: enums are required")
+	}
+
 	// Get package name from import path
 	// i.e: github.com/lggomez/go-enum/example -> example
 	tokens := strings.Split(options.PackageImportPath, "/")
@@ -71,7 +80,7 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 
 	if _, err := os.Stat(options.PackageDirectoryPath); os.IsNotExist(err) {
 		if dirErr := os.Mkdir(options.PackageDirectoryPath, os.ModePerm); dirErr != nil {
-			log.Panic("could not create package - ", err.Error())
+			log.Panic("generator: could not create package - ", err.Error())
 		}
 	}
 
@@ -80,13 +89,15 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 		// Generate base enum struct and its codecs
 		// This is a single time pass that must be done on the first iteration
 		if i == 0 {
-			if err := generateFileFromTemplate(canonicalEnum,
+			if err := generateFileFromTemplate(options,
+				canonicalEnum,
 				templates.EnumTemplate,
 				fmt.Sprintf("%s%senum.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
 			}
 
-			if err := generateFileFromTemplate(canonicalEnum,
+			if err := generateFileFromTemplate(options,
+				canonicalEnum,
 				templates.EnumCodecsTemplate,
 				fmt.Sprintf("%s%senum_codecs.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
 				log.Panic(err.Error())
@@ -94,7 +105,8 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 		}
 
 		// Generate specific enum implementation file
-		if err := generateFileFromTemplate(canonicalEnum,
+		if err := generateFileFromTemplate(options,
+			canonicalEnum,
 			templates.EnumImplTemplate,
 			fmt.Sprintf("%s%s%s.go", options.PackageDirectoryPath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 			log.Panic(err.Error())
@@ -102,7 +114,8 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 
 		if !options.OmitTests {
 			// Generate specific enum implementation test file
-			if err := generateFileFromTemplate(canonicalEnum,
+			if err := generateFileFromTemplate(options,
+				canonicalEnum,
 				templates.EnumImplTestTemplate,
 				fmt.Sprintf("%s%s%s_test.go", options.PackageDirectoryPath, string(os.PathSeparator), canonicalEnum.FileName)); err != nil {
 				log.Panic(err.Error())
@@ -112,7 +125,8 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 			// This is a single time pass that must be done on the first iteration,
 			// and after the first specific enum is generated since it uses it for tests
 			if i == 0 {
-				if err := generateFileFromTemplate(canonicalEnum,
+				if err := generateFileFromTemplate(options,
+					canonicalEnum,
 					templates.EnumCodecsTestTemplate,
 					fmt.Sprintf("%s%senum_codecs_test.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
 					log.Panic(err.Error())
@@ -122,25 +136,29 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 	}
 }
 
-func generateFileFromTemplate(canonicalEnum canonicalStringEnum, templateString, destinationPath string) error {
+func generateFileFromTemplate(options Options, canonicalEnum canonicalStringEnum, templateString, destinationPath string) error {
 	// Generate code from template and save it to buffer
 	src := &bytes.Buffer{}
 	enumTemplate := template.Must(template.New(destinationPath).Parse(templateString))
 	err := enumTemplate.Execute(src, canonicalEnum)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic("generator: could not create source from template - " + err.Error())
 	}
 
+	code := src.Bytes()
+
 	// Run go fmt formatting into buffered source
-	formattedSrc, err := internal.FormatSource(src)
-	if err != nil {
-		log.Panic(err.Error())
+	if !options.OmitSourceFormatting {
+		code, err = internal.FormatSource(bytes.NewBuffer(code))
+		if err != nil {
+			log.Panic("generator: could not format source - " + err.Error())
+		}
 	}
 
 	// Write generated source to disk file
-	err = internal.SaveFile(destinationPath, formattedSrc)
+	err = internal.SaveFile(destinationPath, code)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panic("generator: could not save source to file - " + err.Error())
 	}
 
 	return nil
@@ -167,8 +185,17 @@ func processEnumerations(importPath string, packageName string, options Options,
 			OmitGeneratedNotice:  options.OmitGeneratedNotice,
 		}
 
+		if len(enums) == 0 {
+			log.Panic("generator: invalid zero length enum" + e.Name)
+		}
+
 		for i, value := range e.Values {
-			valueKey := strcase.UpperCamelCase(value)
+			v := value
+			if !options.OmitNameSanitization {
+				v = sanitizeNameQualifier(v)
+			}
+
+			valueKey := strcase.UpperCamelCase(v)
 			if i == 0 {
 				ce.TestCaseName = ce.StructName + valueKey
 				ce.TestCaseKey = ce.StructName
@@ -183,6 +210,14 @@ func processEnumerations(importPath string, packageName string, options Options,
 	}
 
 	return canonicalEnums
+}
+
+func sanitizeNameQualifier(value string) string {
+	camelRe := regexp.MustCompile(`[_. ]`)
+	eraseRe := regexp.MustCompile(`[^a-zA-Z\d_. ]`)
+
+	firstPass := camelRe.ReplaceAllString(value, "_")
+	return eraseRe.ReplaceAllString(firstPass, "")
 }
 
 func calculateBSONLen(value string) int {

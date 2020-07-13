@@ -18,6 +18,8 @@ func main() {
 			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
 			OmitGeneratedNotice:  false,
 			OmitTests:            false,
+			OmitNameSanitization: false,
+			OmitSourceFormatting: false,
 		},
 		generator.StringEnumDefinition{
 			Name:   "Ghost",

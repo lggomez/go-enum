@@ -18,7 +18,7 @@ Use this package if you wish to have type support for:
     * bson.Marshaler, bson.Unmarshaler (from [go.mongodb.org/mongo-driver/bson](https://godoc.org/go.mongodb.org/mongo-driver/bson) package)
 * Ability to perform type-safe comparisons at runtime against strings and instances of the same enum type
 
-For more information on the enumeration type API, see the [example](https://pkg.go.dev/github.com/lggomez/go-enum@v0.0.1/example/enum?tab=doc#Thing):
+For more information on the enumeration type API, see the [example](https://pkg.go.dev/github.com/lggomez/go-enum@v0.2.0/example/enum?tab=doc#Thing):
 
 ## Usage
 
