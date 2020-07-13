@@ -26,7 +26,7 @@ func main() {
 			Values: []string{"Blinky", "Pinky", "Inky", "Clyde"},
 		},
 		generator.StringEnumDefinition{
-			Name:   "Thing",
+			Name:   "SpecialThing",
 			Values: []string{"Foo", "Bar", "Baz", "Quux"},
 		},
 	)

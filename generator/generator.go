@@ -178,7 +178,7 @@ func processEnumerations(importPath string, packageName string, options Options,
 			StructNameLowerCase:  lowerCamelName,
 			IndexKeyName:         lowerCamelName + "Key",
 			Values:               map[string]string{},
-			TestCaseKey:          lowerCamelName,
+			TestCaseKey:          strcase.SnakeCase(e.Name),
 			TestCaseInvalidValue: uuid.New().String(), // Set an unique random value to prevent collisions
 			FileName:             strcase.SnakeCase(e.Name),
 			Timestamp:            time.Now().Format(time.RFC3339),
@@ -198,7 +198,6 @@ func processEnumerations(importPath string, packageName string, options Options,
 			valueKey := strcase.UpperCamelCase(v)
 			if i == 0 {
 				ce.TestCaseName = ce.StructName + valueKey
-				ce.TestCaseKey = ce.StructName
 				ce.TestCaseValue = value
 				ce.TestCaseBinaryLen = len([]byte(ce.TestCaseValue))
 				ce.TestCaseBSONLen = calculateBSONLen(ce.TestCaseValue)
