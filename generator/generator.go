@@ -19,14 +19,14 @@ import (
 	"github.com/lggomez/go-enum/generator/internal/templates"
 )
 
-// StringEnumDefinition is the basic name:values definition of an enumeration.
+// StringEnumDefinition is the basic [name:values] definition of an enumeration.
 // As the name implies, this is for string enumerations only
 type StringEnumDefinition struct {
 	Name   string
 	Values []string
 }
 
-// Options defined the options to be passed to the generator to configure
+// Options defined the settings to be passed to the generator in order to configure
 // certain aspects of the code generation
 type Options struct {
 	// Filesystem path of the directory corresponding to the package to be used or created

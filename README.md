@@ -55,13 +55,15 @@ func main() {
 			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
 			OmitGeneratedNotice:  false,
 			OmitTests:            false,
+			OmitNameSanitization: false,
+			OmitSourceFormatting: false,
 		},
 		generator.StringEnumDefinition{
 			Name:   "Ghost",
 			Values: []string{"Blinky", "Pinky", "Inky", "Clyde"},
 		},
 		generator.StringEnumDefinition{
-			Name:   "Thing",
+			Name:   "SpecialThing",
 			Values: []string{"Foo", "Bar", "Baz", "Quux"},
 		},
 	)
