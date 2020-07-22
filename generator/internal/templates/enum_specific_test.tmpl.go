@@ -18,38 +18,39 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type foo{{ .StructName }} struct {
-	TestValue {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }}"` + "`" + `
+	TestValue {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
 }
 
 type foo{{ .StructName }}OmitEmpty struct {
-	TestValue {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }},omitempty"` + "`" + `
+	TestValue {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }},omitempty"` + "`" + `
 }
 
 type foo{{ .StructName }}Ptr struct {
-	TestValue *{{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }}"` + "`" + `
+	TestValue *{{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
 }
 
 type foo{{ .StructName }}PtrOmitEmpty struct {
-	TestValue *{{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }},omitempty"` + "`" + `
+	TestValue *{{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }},omitempty"` + "`" + `
 }
 
 func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 	t.Run("Marshal_AnnonStructField", func(t *testing.T) {
 		v := struct {
-			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCaseName }}}
+			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
+		}{ {{ .Package }}.{{ .TestCase.Name }}}
 		data, err := json.Marshal(&v)
 		require.Nil(t, err)
-		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCaseKey }}":"%s"}` + "`" + `, v.A.String()), string(data))
+		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, v.A.String()), string(data))
 	})
 	t.Run("Marshal_StructField", func(t *testing.T) {
 		v := foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .StructName }}{}}
 		data, err := json.Marshal(v)
 		require.Nil(t, err)
-		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCaseKey }}":"%s"}` + "`" + `, v.TestValue.String()), string(data))
+		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, v.TestValue.String()), string(data))
 	})
 	t.Run("Marshal_OmitEmptyStruct", func(t *testing.T) {
 		// encoding/json ignores omitempty on struct zero values
@@ -57,26 +58,26 @@ func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 		v := foo{{ .StructName }}OmitEmpty{}
 		data, err := json.Marshal(v)
 		require.Nil(t, err)
-		assert.EqualValues(t, ` + "`" + `{"{{ .TestCaseKey }}":""}` + "`" + `, string(data))
+		assert.EqualValues(t, ` + "`" + `{"{{ .TestCase.Key }}":""}` + "`" + `, string(data))
 	})
 	t.Run("Marshal_StructFieldPtr", func(t *testing.T) {
 		vPtr := foo{{ .StructName }}Ptr{TestValue: &{{ .Package }}.{{ .StructName }}{}}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
-		assert.EqualValues(t, ` + "`" + `{"{{ .TestCaseKey }}":""}` + "`" + `, string(data))
+		assert.EqualValues(t, ` + "`" + `{"{{ .TestCase.Key }}":""}` + "`" + `, string(data))
 	})
 	t.Run("Marshal_StructFieldPtr", func(t *testing.T) {
-		dt := {{ .Package }}.{{ .TestCaseName }}
+		dt := {{ .Package }}.{{ .TestCase.Name }}
 		vPtr := foo{{ .StructName }}Ptr{TestValue: &dt}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
-		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCaseKey }}":"%s"}` + "`" + `, vPtr.TestValue.String()), string(data))
+		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, vPtr.TestValue.String()), string(data))
 	})
 	t.Run("Marshal_StructFieldNilPtr", func(t *testing.T) {
 		vPtr := foo{{ .StructName }}Ptr{}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
-		assert.EqualValues(t, ` + "`" + `{"{{ .TestCaseKey }}":null}` + "`" + `, string(data))
+		assert.EqualValues(t, ` + "`" + `{"{{ .TestCase.Key }}":null}` + "`" + `, string(data))
 	})
 	t.Run("Marshal_OmitEmptyStructPtr", func(t *testing.T) {
 		vPtr := foo{{ .StructName }}PtrOmitEmpty{}
@@ -88,37 +89,37 @@ func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 
 func Test{{ .StructName }}_UnmarshalJSON(t *testing.T) {
 	t.Run("Unmarshal_InvalidValue", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":"{{ .TestCaseInvalidValue }}"}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":"{{ .TestCase.InvalidValue }}"}` + "`" + `
 		rawData := []byte(data)
 
 		v := struct {
-			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCaseName }}}
+			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
+		}{ {{ .Package }}.{{ .TestCase.Name }}}
 		err := json.Unmarshal(rawData, &v)
 		require.NotNil(t, err)
 	})
 	t.Run("Unmarshal_AnnonStructField", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":"{{ .TestCaseValue }}"}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":"{{ .TestCase.Value }}"}` + "`" + `
 		rawData := []byte(data)
 
 		v := struct {
-			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCaseKey }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCaseName }} }
+			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
+		}{ {{ .Package }}.{{ .TestCase.Name }} }
 		err := json.Unmarshal(rawData, &v)
 		require.Nil(t, err)
-		assert.EqualValues(t, "{{ .TestCaseValue }}", v.A.String())
+		assert.EqualValues(t, "{{ .TestCase.Value }}", v.A.String())
 	})
 	t.Run("Unmarshal_StructField", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":"{{ .TestCaseValue }}"}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":"{{ .TestCase.Value }}"}` + "`" + `
 		rawData := []byte(data)
 
 		v := foo{{ .StructName }}{}
 		err := json.Unmarshal(rawData, &v)
 		require.Nil(t, err)
-		assert.EqualValues(t, "{{ .TestCaseValue }}", v.TestValue.String())
+		assert.EqualValues(t, "{{ .TestCase.Value }}", v.TestValue.String())
 	})
 	t.Run("Unmarshal_OmitEmptyStruct", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":null}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":null}` + "`" + `
 		rawData := []byte(data)
 
 		v := foo{{ .StructName }}OmitEmpty{}
@@ -126,16 +127,16 @@ func Test{{ .StructName }}_UnmarshalJSON(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("Unmarshal_StructFieldPtr", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":"{{ .TestCaseValue }}"}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":"{{ .TestCase.Value }}"}` + "`" + `
 		rawData := []byte(data)
 
 		vPtr := foo{{ .StructName }}Ptr{}
 		err := json.Unmarshal(rawData, &vPtr)
 		require.Nil(t, err)
-		assert.EqualValues(t, "{{ .TestCaseValue }}", vPtr.TestValue.String())
+		assert.EqualValues(t, "{{ .TestCase.Value }}", vPtr.TestValue.String())
 	})
 	t.Run("Unmarshal_StructFieldNilPtr", func(t *testing.T) {
-		data := ` + "`" + `{"{{ .TestCaseKey }}":null}` + "`" + `
+		data := ` + "`" + `{"{{ .TestCase.Key }}":null}` + "`" + `
 		rawData := []byte(data)
 
 		vPtr := foo{{ .StructName }}Ptr{}
@@ -150,7 +151,7 @@ func Test{{ .StructName }}_EmptyValues(t *testing.T) {
 		v := foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .StructName }}{}}
 		data, err := json.Marshal(v)
 		require.NoError(t, err)
-		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCaseKey }}":"%s"}` + "`" + `, v.TestValue.String()), string(data))
+		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, v.TestValue.String()), string(data))
 
 		v2 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v2)
@@ -166,7 +167,7 @@ func Test{{ .StructName }}_EmptyValues(t *testing.T) {
 		v := foo{{ .StructName }}Ptr{TestValue: nil}
 		data, err := json.Marshal(v)
 		require.NoError(t, err)
-		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCaseKey }}":%s}` + "`" + `, "null"), string(data))
+		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":%s}` + "`" + `, "null"), string(data))
 
 		v2 := foo{{ .StructName }}{}
 		err = json.Unmarshal(data, &v2)
@@ -198,6 +199,129 @@ func Test{{ .StructName }}_ForEach(t *testing.T) {
 		assert.True(t, value.EqualsIgnoreCase(enumValue.String()))
 	})
 	assert.EqualValues(t, {{ .Package }}.Enum{{ .StructName }}.Len(), j)
+}
+
+func Test{{ .StructName }}_TextCodec(t *testing.T) {
+	t.Run("MarshalText_Valid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		data, err := c.TestValue.MarshalText()
+		require.Nil(t, err)
+		require.True(t, len(data) > 0)
+	})
+	t.Run("UnmarshalText_Valid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.UnmarshalText([]byte("{{ .TestCase.Value }}"))
+		require.Nil(t, err)
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+	})
+	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.UnmarshalText([]byte(""))
+		require.NoError(t, err)
+		err = c.TestValue.UnmarshalText([]byte("{{ .TestCase.InvalidValue }}"))
+		require.NotNil(t, err)
+	})
+}
+
+func Test{{ .StructName }}_Stringer(t *testing.T) {
+	c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+	require.EqualValues(t, "{{ .TestCase.Value }}", c.TestValue.String())
+}
+
+func Test{{ .StructName }}_DriverValues(t *testing.T) {
+	t.Run("Scan_String", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		require.Nil(t, c.TestValue.Scan({{ .Package }}.{{ .TestCase.Name }}.String()))
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+	})
+	t.Run("Scan_Bytes", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		require.Nil(t, c.TestValue.Scan([]byte({{ .Package }}.{{ .TestCase.Name }}.String())))
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+	})
+	t.Run("Scan_Invalid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		require.NotNil(t, c.TestValue.Scan(1))
+	})
+	t.Run("Scan_Invalid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		v, err := c.TestValue.Value()
+		assert.Nil(t, err)
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), fmt.Sprintf("%v", v))
+	})
+}
+
+func Test{{ .StructName }}_BinaryCodec(t *testing.T) {
+	t.Run("MarshalBinary_Valid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		data, err := c.TestValue.MarshalBinary()
+		require.Nil(t, err)
+		assert.Len(t, data, {{ .TestCase.BinaryLen }})
+	})
+	t.Run("UnmarshalBinary_Valid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.UnmarshalBinary([]byte("{{ .TestCase.Value }}"))
+		require.Nil(t, err)
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+	})
+	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.UnmarshalBinary(nil)
+		require.NoError(t, err)
+		err = c.TestValue.UnmarshalBinary([]byte("{{ .TestCase.InvalidValue }}"))
+		require.NotNil(t, err)
+	})
+}
+
+func Test{{ .StructName }}_GobCodec(t *testing.T) {
+	t.Run("MarshalBinary_Valid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		data, err := c.TestValue.GobEncode()
+		require.Nil(t, err)
+		assert.Len(t, data, {{ .TestCase.BinaryLen }})
+	})
+	t.Run("UnmarshalBinary_Valid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.GobDecode([]byte("{{ .TestCase.Value }}"))
+		require.Nil(t, err)
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+	})
+	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		err := c.TestValue.GobDecode(nil)
+		require.NoError(t, err)
+		err = c.TestValue.GobDecode([]byte("{{ .TestCase.InvalidValue }}"))
+		require.NotNil(t, err)
+	})
+}
+
+func Test{{ .StructName }}_MarshalBSON(t *testing.T) {
+	t.Run("MarshalBSON_Valid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		data, err := c.TestValue.MarshalBSON()
+		require.Nil(t, err)
+		assert.Len(t, data, {{ .TestCase.BSONLen }})
+	})
+}
+
+func Test{{ .StructName }}_UnmarshalBSON(t *testing.T) {
+	t.Run("UnmarshalBSON_Valid", func(t *testing.T) {
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+
+		v1 := &c
+		rawData, err := bson.Marshal(v1)
+		require.Nil(t, err)
+
+		v2 := &foo{{ .StructName }}{}
+		err = bson.Unmarshal(rawData, &v2)
+		require.Nil(t, err)
+		assert.EqualValues(t, "{{ .TestCase.Value }}", v2.TestValue.String())
+	})
 }
 
 `

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
 
 	"github.com/google/uuid"
 	"github.com/stoewer/go-strcase"
@@ -50,12 +51,7 @@ type canonicalStringEnum struct {
 	IndexKeyName string
 	Values       map[string]string
 
-	TestCaseName         string
-	TestCaseKey          string
-	TestCaseValue        string
-	TestCaseInvalidValue string
-	TestCaseBinaryLen    int
-	TestCaseBSONLen      int
+	TestCase testFieldMetadata
 
 	ImportPath          string
 	FileName            string
@@ -64,7 +60,22 @@ type canonicalStringEnum struct {
 	OmitGeneratedNotice bool
 }
 
-// GenerateEnumTypes scaffolds enum types for the given options anddefinitions
+type testFieldMetadata struct {
+	Name               string
+	Key                string
+	Value              string
+	ValueScrambledCase string
+	InvalidValue       string
+	BinaryLen          int
+	BSONLen            int
+}
+
+type fieldMetadata struct {
+	Value    string
+	TestCase testFieldMetadata
+}
+
+// GenerateEnumTypes scaffolds enum types for the given options and definitions
 func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 	if len(enums) == 0 {
 		log.Panic("generator: enums are required")
@@ -121,10 +132,17 @@ func GenerateEnumTypes(options Options, enums ...StringEnumDefinition) {
 				log.Panic(err.Error())
 			}
 
-			// Generate codecs test file
+			// Generate codecs and base stringEnumValue test files
 			// This is a single time pass that must be done on the first iteration,
 			// and after the first specific enum is generated since it uses it for tests
 			if i == 0 {
+				if err := generateFileFromTemplate(options,
+					canonicalEnum,
+					templates.EnumTestTemplate,
+					fmt.Sprintf("%s%senum_test.go", options.PackageDirectoryPath, string(os.PathSeparator))); err != nil {
+					log.Panic(err.Error())
+				}
+
 				if err := generateFileFromTemplate(options,
 					canonicalEnum,
 					templates.EnumCodecsTestTemplate,
@@ -142,7 +160,7 @@ func generateFileFromTemplate(options Options, canonicalEnum canonicalStringEnum
 	enumTemplate := template.Must(template.New(destinationPath).Parse(templateString))
 	err := enumTemplate.Execute(src, canonicalEnum)
 	if err != nil {
-		log.Panic("generator: could not create source from template - " + err.Error())
+		log.Panicf("generator: could not create source from template (destination %s): %s", destinationPath, err.Error())
 	}
 
 	code := src.Bytes()
@@ -151,14 +169,14 @@ func generateFileFromTemplate(options Options, canonicalEnum canonicalStringEnum
 	if !options.OmitSourceFormatting {
 		code, err = internal.FormatSource(bytes.NewBuffer(code))
 		if err != nil {
-			log.Panic("generator: could not format source - " + err.Error())
+			log.Panicf("generator: could not format source (destination %s): %s", destinationPath, err.Error())
 		}
 	}
 
 	// Write generated source to disk file
 	err = internal.SaveFile(destinationPath, code)
 	if err != nil {
-		log.Panic("generator: could not save source to file - " + err.Error())
+		log.Panicf("generator: could not save source to file (destination %s): %s", destinationPath, err.Error())
 	}
 
 	return nil
@@ -172,36 +190,43 @@ func processEnumerations(importPath string, packageName string, options Options,
 		lowerCamelName := strcase.LowerCamelCase(e.Name)
 
 		ce := &canonicalStringEnum{
-			Package:              packageName,
-			ImportPath:           importPath,
-			StructName:           upperCamelName,
-			StructNameLowerCase:  lowerCamelName,
-			IndexKeyName:         lowerCamelName + "Key",
-			Values:               map[string]string{},
-			TestCaseKey:          strcase.SnakeCase(e.Name),
-			TestCaseInvalidValue: uuid.New().String(), // Set an unique random value to prevent collisions
-			FileName:             strcase.SnakeCase(e.Name),
-			Timestamp:            time.Now().Format(time.RFC3339),
-			OmitGeneratedNotice:  options.OmitGeneratedNotice,
+			Package:             packageName,
+			ImportPath:          importPath,
+			StructName:          upperCamelName,
+			StructNameLowerCase: lowerCamelName,
+			IndexKeyName:        lowerCamelName + "Key",
+			Values:              map[string]string{},
+			TestCase: testFieldMetadata{
+				Key:          strcase.SnakeCase(e.Name),
+				InvalidValue: "invalid_" + uuid.New().String(), // Set an unique random value to prevent collisions
+			},
+			FileName:            strcase.SnakeCase(e.Name),
+			Timestamp:           time.Now().Format(time.RFC3339),
+			OmitGeneratedNotice: options.OmitGeneratedNotice,
 		}
 
 		if len(enums) == 0 {
 			log.Panic("generator: invalid zero length enum" + e.Name)
 		}
 
+		// traverse enum values and generate the field metadata for each value and its test
 		for i, value := range e.Values {
 			v := value
 			if !options.OmitNameSanitization {
+				// sanitize the struct name so it is a valid Go identifier
 				v = sanitizeNameQualifier(v)
 			}
 
 			valueKey := strcase.UpperCamelCase(v)
 			if i == 0 {
-				ce.TestCaseName = ce.StructName + valueKey
-				ce.TestCaseValue = value
-				ce.TestCaseBinaryLen = len([]byte(ce.TestCaseValue))
-				ce.TestCaseBSONLen = calculateBSONLen(ce.TestCaseValue)
+				// generate metadata of test case value from first value of the list
+				ce.TestCase.Name = ce.StructName + valueKey
+				ce.TestCase.Value = value
+				ce.TestCase.ValueScrambledCase = scrambleCase(value)
+				ce.TestCase.BinaryLen = len([]byte(ce.TestCase.Value))
+				ce.TestCase.BSONLen = calculateBSONLen(ce.TestCase.Value)
 			}
+
 			ce.Values[valueKey] = value
 		}
 
@@ -209,6 +234,20 @@ func processEnumerations(importPath string, packageName string, options Options,
 	}
 
 	return canonicalEnums
+}
+
+func scrambleCase(value string) string {
+	s := ""
+
+	for _, c := range value {
+		if unicode.IsUpper(c) {
+			s = s + strings.ToLower(string(c))
+		} else {
+			s = s + strings.ToUpper(string(c))
+		}
+	}
+
+	return s
 }
 
 func sanitizeNameQualifier(value string) string {
