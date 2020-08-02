@@ -18,7 +18,7 @@ Use this package if you wish to have type support for:
     * bson.Marshaler, bson.Unmarshaler (from [go.mongodb.org/mongo-driver/bson](https://godoc.org/go.mongodb.org/mongo-driver/bson) package)
 * Ability to perform type-safe comparisons at runtime against strings and instances of the same enum type
 
-For more information on the enumeration type API, see the [example](https://pkg.go.dev/github.com/lggomez/go-enum@v0.3.1/example/enum?tab=doc#SpecialThing):
+For more information on the enumeration type API, see the [example](https://pkg.go.dev/github.com/lggomez/go-enum@v0.4.0/example/enum?tab=doc#SpecialThing):
 
 ## Usage
 
@@ -46,9 +46,9 @@ import (
 	"github.com/lggomez/go-enum/generator"
 )
 
+// This example generates the 'Ghost', 'Thing' and 'CountriesIso31661' enums inside of an 'enum' subpackage
+// To generate them on the current package instead, just use the current directory path (".")
 func main() {
-	// This example generates the 'Ghost' and 'Thing' enums on an 'enum' subpackage
-	// To generate them on the current package, just use the current directory path (".")
 	generator.GenerateEnumTypes(
 		generator.Options{
 			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
@@ -65,6 +65,21 @@ func main() {
 		generator.StringEnumDefinition{
 			Name:   "SpecialThing",
 			Values: []string{"Foo", "Bar", "Baz", "Quux"},
+		},
+	)
+	generator.GenerateEnumTypes(
+		generator.Options{
+			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
+			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
+			ValueIdentifierCasing: generator.UpperCase,
+			OmitGeneratedNotice:  false,
+			OmitTests:            false,
+			OmitNameSanitization: false,
+			OmitSourceFormatting: false,
+		},
+		generator.StringEnumDefinition{
+			Name:   "CountriesISO3166-1",
+			Values: []string{"Ca", "Uy", "Us", "Ar"},
 		},
 	)
 }

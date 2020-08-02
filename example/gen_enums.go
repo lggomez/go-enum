@@ -9,9 +9,9 @@ import (
 	"github.com/lggomez/go-enum/generator"
 )
 
+// This example generates the 'Ghost', 'Thing' and 'CountriesIso31661' enums inside of an 'enum' subpackage
+// To generate them on the current package instead, just use the current directory path (".")
 func main() {
-	// This example generates the 'Ghost' and 'Thing' enums on an 'enum' subpackage
-	// To generate them on the current package, just use the current directory path (".")
 	generator.GenerateEnumTypes(
 		generator.Options{
 			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
