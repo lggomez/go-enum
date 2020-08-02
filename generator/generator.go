@@ -19,6 +19,16 @@ import (
 	"github.com/lggomez/go-enum/generator/internal/templates"
 )
 
+type ValueIdentifierCasing int
+
+const (
+	CamelCase ValueIdentifierCasing = iota
+	UpperCase
+	LowerCase
+	SnakeUpperCase
+	SnakeCase
+)
+
 // StringEnumDefinition is the basic [name:values] definition of an enumeration.
 // As the name implies, this is for string enumerations only
 type StringEnumDefinition struct {
@@ -33,6 +43,9 @@ type Options struct {
 	PackageDirectoryPath string
 	// Import path of the package to be used or created. It must be a valid path according to the working module structure
 	PackageImportPath string
+	// Casing to be used on enum value identifier (eg: CamelCase -> MyEnumFoo; UpperCase -> MyEnumFOO).
+	// Default is camel case
+	ValueIdentifierCasing ValueIdentifierCasing
 	// Whether to omit the generated code header on files. Default value is false
 	OmitGeneratedNotice bool
 	// Whether to omit tests for generated code. Default value is false
@@ -217,7 +230,7 @@ func processEnumerations(importPath string, packageName string, options Options,
 				v = sanitizeNameQualifier(v)
 			}
 
-			valueKey := strcase.UpperCamelCase(v)
+			valueKey := applyCasing(v, options.ValueIdentifierCasing)
 			if i == 0 {
 				// generate metadata of test case value from first value of the list
 				ce.TestCase.Name = ce.StructName + valueKey
@@ -234,6 +247,23 @@ func processEnumerations(importPath string, packageName string, options Options,
 	}
 
 	return canonicalEnums
+}
+
+func applyCasing(value string, casing ValueIdentifierCasing) string {
+	switch casing {
+	case UpperCase:
+		return strings.ToUpper(value)
+	case LowerCase:
+		return strings.ToLower(value)
+	case SnakeUpperCase:
+		return strcase.UpperSnakeCase(value)
+	case SnakeCase:
+		return strcase.SnakeCase(value)
+	case CamelCase:
+		fallthrough
+	default:
+		return value
+	}
 }
 
 func scrambleCase(value string) string {
