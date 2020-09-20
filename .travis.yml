@@ -14,12 +14,14 @@ before_install:
 
 install:
     - ls -a
-    - cd generator
-    - go build -v -x ./...
 
 script:
     - ls -a
-    - cd example;go generate;cd enum;go test -coverprofile=:../../coverage.txt -covermode=atomic -v -bench ./...
+    - cd generator
+    - go build -v -x ./...
+    - cd ..
+    - cd example;go generate;cd enum
+    - go test -coverprofile=:../../coverage.txt -covermode=atomic -v -bench ./...
 
 after_success:
     - ls -a
