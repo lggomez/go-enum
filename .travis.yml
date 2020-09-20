@@ -2,7 +2,9 @@ language: go
 os:
     - linux
 go:
+    - 1.13.x
     - 1.14.x
+    - 1.15.x
 
 before_script:
     - ulimit -n 30000
@@ -11,10 +13,16 @@ before_install:
     - go get -v -t -d ./...
 
 install:
-    - cd generator;go build -v -x ./...
+    - ls -a
 
 script:
-    - cd example;go generate;cd enum;go test -coverprofile=:../../coverage.txt -covermode=atomic -v -bench ./...
+    - ls -a
+    - cd generator
+    - go build -v -x ./...
+    - cd ..
+    - cd example;go generate;cd enum
+    - go test -coverprofile=coverage.txt -covermode=atomic -v -bench ./...
 
 after_success:
+    - ls -a
     - bash <(curl -s https://codecov.io/bash)
