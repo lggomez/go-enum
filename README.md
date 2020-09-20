@@ -1,4 +1,6 @@
 ![Go](https://github.com/lggomez/go-enum/workflows/Go/badge.svg?branch=master)
+[![Build Status](https://travis-ci.org/lggomez/go-enum.svg?branch=master)](https://travis-ci.org/lggomez/go-enum)
+[![codecov](https://codecov.io/gh/lggomez/go-enum/branch/master/graph/badge.svg)](https://codecov.io/gh/lggomez/go-enum)
 [![GoDoc](https://godoc.org/github.com/lggomez/go-enum?status.svg)](https://pkg.go.dev/github.com/lggomez/go-enum?tab=doc)
 [![Release](https://img.shields.io/github/release/lggomez/go-enum.svg?style=flat-square)](https://github.com/lggomez/go-enum/releases)
 
