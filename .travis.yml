@@ -13,10 +13,14 @@ before_install:
     - go get -v -t -d ./...
 
 install:
-    - cd generator;go build -v -x ./...
+    - ls -a
+    - cd generator
+    - go build -v -x ./...
 
 script:
+    - ls -a
     - cd example;go generate;cd enum;go test -coverprofile=:../../coverage.txt -covermode=atomic -v -bench ./...
 
 after_success:
+    - ls -a
     - bash <(curl -s https://codecov.io/bash)
