@@ -260,7 +260,7 @@ func applyCasing(value string, casing ValueIdentifierCasing) string {
 	case SnakeCase:
 		return strcase.SnakeCase(value)
 	case CamelCase:
-		fallthrough
+		return strcase.UpperCamelCase(value)
 	default:
 		return value
 	}

@@ -54,11 +54,12 @@ func main() {
 	generator.GenerateEnumTypes(
 		generator.Options{
 			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
-			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
-			OmitGeneratedNotice:  false,
-			OmitTests:            false,
-			OmitNameSanitization: false,
-			OmitSourceFormatting: false,
+			PackageImportPath:     "github.com/lggomez/go-enum/example/enum",
+			ValueIdentifierCasing: generator.CamelCase,
+			OmitGeneratedNotice:   false,
+			OmitTests:             false,
+			OmitNameSanitization:  false,
+			OmitSourceFormatting:  false,
 		},
 		generator.StringEnumDefinition{
 			Name:   "Ghost",
@@ -72,12 +73,12 @@ func main() {
 	generator.GenerateEnumTypes(
 		generator.Options{
 			PackageDirectoryPath: fmt.Sprintf(".%venum", string(os.PathSeparator)),
-			PackageImportPath:    "github.com/lggomez/go-enum/example/enum",
+			PackageImportPath:     "github.com/lggomez/go-enum/example/enum",
 			ValueIdentifierCasing: generator.UpperCase,
-			OmitGeneratedNotice:  false,
-			OmitTests:            false,
-			OmitNameSanitization: false,
-			OmitSourceFormatting: false,
+			OmitGeneratedNotice:   false,
+			OmitTests:             false,
+			OmitNameSanitization:  false,
+			OmitSourceFormatting:  false,
 		},
 		generator.StringEnumDefinition{
 			Name:   "CountriesISO3166-1",
