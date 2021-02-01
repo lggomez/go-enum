@@ -37,7 +37,7 @@ type fooEnumValuePtrOmitEmpty struct {
 
 func TestEnumValue_MarshalJSON(t *testing.T) {
 	t.Run("Marshal_AnnonStructField", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 		v := struct {
 			A stringEnumValue ` + "`" + `json:"enum_value"` + "`" + `
 		}{c}
@@ -66,7 +66,7 @@ func TestEnumValue_MarshalJSON(t *testing.T) {
 		assert.EqualValues(t, ` + "`" + `{"enum_value":""}` + "`" + `, string(data))
 	})
 	t.Run("Marshal_StructFieldPtr", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 		vPtr := fooEnumValuePtr{EnumValue: &c}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
@@ -91,7 +91,7 @@ func TestEnumValue_UnmarshalJSON(t *testing.T) {
 		data := ` + "`" + `{"enum_value":"PA` + "`" + `
 rawData := []byte(data)
 
-c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 v := struct {
 A stringEnumValue ` + "`" + `json:"enum_value"` + "`" + `
 }{c}
@@ -103,7 +103,7 @@ t.Run("Unmarshal_InvalidValue", func(t *testing.T) {
 	data := ` + "`" + `{"enum_value":"{{ .TestCase.InvalidValue }}"}` + "`" + `
 	rawData := []byte(data)
 
-	c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+	c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 	v := struct {
 		A stringEnumValue ` + "`" + `json:"enum_value"` + "`" + `
 	}{c}
@@ -114,7 +114,7 @@ t.Run("Unmarshal_InvalidValueJSON", func(t *testing.T) {
 	data := ` + "`" + `{"enum_value":123}` + "`" + `
 	rawData := []byte(data)
 
-	c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+	c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 	v := struct {
 		A stringEnumValue ` + "`" + `json:"enum_value"` + "`" + `
 	}{c}
@@ -126,7 +126,7 @@ t.Run("Unmarshal_AnnonStructField", func(t *testing.T) {
 	data := ` + "`" + `{"enum_value":"{{ .TestCase.Value }}"}` + "`" + `
 	rawData := []byte(data)
 
-	c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+	c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 	v := struct {
 		A stringEnumValue ` + "`" + `json:"enum_value"` + "`" + `
 	}{c}
@@ -181,7 +181,7 @@ t.Run("Unmarshal_TableUnmatch", func(t *testing.T) {
 
 func TestEnumValue_TextCodec(t *testing.T) {
 	t.Run("MarshalText_Valid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		data, err := c.MarshalText()
 		require.Nil(t, err)
@@ -191,7 +191,7 @@ func TestEnumValue_TextCodec(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
 		err := c.UnmarshalText([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), c.value)
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), c.value)
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
@@ -203,37 +203,37 @@ func TestEnumValue_TextCodec(t *testing.T) {
 }
 
 func TestEnumValue_Stringer(t *testing.T) {
-	c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+	c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 	require.EqualValues(t, c.value, c.String())
 }
 
 func TestEnumValue_DriverValues(t *testing.T) {
 	t.Run("Scan_String", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
-		require.Nil(t, c.Scan({{ .TestCase.Name }}.String()))
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), c.value)
+		require.Nil(t, c.Scan({{ .TestCase.Name }}().String()))
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), c.value)
 	})
 	t.Run("Scan_Bytes", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
-		require.Nil(t, c.Scan([]byte({{ .TestCase.Name }}.String())))
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), c.value)
+		require.Nil(t, c.Scan([]byte({{ .TestCase.Name }}().String())))
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), c.value)
 	})
 	t.Run("Scan_Invalid", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
 		require.NotNil(t, c.Scan(1))
 	})
 	t.Run("Scan_Invalid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		v, err := c.Value()
 		assert.Nil(t, err)
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), fmt.Sprintf("%v", v))
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), fmt.Sprintf("%v", v))
 	})
 }
 
 func TestEnumValue_BinaryCodec(t *testing.T) {
 	t.Run("MarshalBinary_Valid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		data, err := c.MarshalBinary()
 		require.Nil(t, err)
@@ -243,7 +243,7 @@ func TestEnumValue_BinaryCodec(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
 		err := c.UnmarshalBinary([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), c.value)
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), c.value)
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
@@ -256,7 +256,7 @@ func TestEnumValue_BinaryCodec(t *testing.T) {
 
 func TestEnumValue_GobCodec(t *testing.T) {
 	t.Run("MarshalBinary_Valid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		data, err := c.GobEncode()
 		require.Nil(t, err)
@@ -266,7 +266,7 @@ func TestEnumValue_GobCodec(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
 		err := c.GobDecode([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .TestCase.Name }}.String(), c.value)
+		require.EqualValues(t, {{ .TestCase.Name }}().String(), c.value)
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
 		c := &stringEnumValue{key: {{ .IndexKeyName }} }
@@ -279,7 +279,7 @@ func TestEnumValue_GobCodec(t *testing.T) {
 
 func TestEnumValue_MarshalBSON(t *testing.T) {
 	t.Run("MarshalBSON_Valid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		data, err := c.MarshalBSON()
 		require.Nil(t, err)
@@ -289,7 +289,7 @@ func TestEnumValue_MarshalBSON(t *testing.T) {
 
 func TestEnumValue_UnmarshalBSON(t *testing.T) {
 	t.Run("UnmarshalBSON_Valid", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 
 		v1 := &fooEnumValue{EnumValue: c}
 		rawData, err := bson.Marshal(v1)
@@ -301,7 +301,7 @@ func TestEnumValue_UnmarshalBSON(t *testing.T) {
 		assert.EqualValues(t, "{{ .TestCase.Value }}", v2.EnumValue.String())
 	})
 	t.Run("UnmarshalBSON_InvalidTable", func(t *testing.T) {
-		c := stringEnumValue{ {{ .TestCase.Name }}.String(), {{ .IndexKeyName }} }
+		c := stringEnumValue{ {{ .TestCase.Name }}().String(), {{ .IndexKeyName }} }
 		ptr := &c
 		ptr.value = "PPP"
 		v1 := &fooEnumValue{EnumValue: c}

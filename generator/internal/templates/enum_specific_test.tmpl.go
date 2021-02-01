@@ -41,7 +41,7 @@ func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 	t.Run("Marshal_AnnonStructField", func(t *testing.T) {
 		v := struct {
 			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCase.Name }}}
+		}{ {{ .Package }}.{{ .TestCase.Name }}()}
 		data, err := json.Marshal(&v)
 		require.Nil(t, err)
 		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, v.A.String()), string(data))
@@ -60,7 +60,7 @@ func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 		require.Nil(t, err)
 		assert.EqualValues(t, ` + "`" + `{"{{ .TestCase.Key }}":""}` + "`" + `, string(data))
 	})
-	t.Run("Marshal_StructFieldPtr", func(t *testing.T) {
+	t.Run("Marshal_StructFieldEmptyPtr", func(t *testing.T) {
 		vPtr := foo{{ .StructName }}Ptr{TestValue: &{{ .Package }}.{{ .StructName }}{}}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
@@ -68,7 +68,8 @@ func Test{{ .StructName }}_MarshalJSON(t *testing.T) {
 	})
 	t.Run("Marshal_StructFieldPtr", func(t *testing.T) {
 		dt := {{ .Package }}.{{ .TestCase.Name }}
-		vPtr := foo{{ .StructName }}Ptr{TestValue: &dt}
+		val := dt() 
+		vPtr := foo{{ .StructName }}Ptr{TestValue: &val}
 		data, err := json.Marshal(vPtr)
 		require.Nil(t, err)
 		assert.EqualValues(t, fmt.Sprintf(` + "`" + `{"{{ .TestCase.Key }}":"%s"}` + "`" + `, vPtr.TestValue.String()), string(data))
@@ -94,7 +95,7 @@ func Test{{ .StructName }}_UnmarshalJSON(t *testing.T) {
 
 		v := struct {
 			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCase.Name }}}
+		}{ {{ .Package }}.{{ .TestCase.Name }}()}
 		err := json.Unmarshal(rawData, &v)
 		require.NotNil(t, err)
 	})
@@ -104,7 +105,7 @@ func Test{{ .StructName }}_UnmarshalJSON(t *testing.T) {
 
 		v := struct {
 			A {{ .Package }}.{{ .StructName }} ` + "`" + `json:"{{ .TestCase.Key }}"` + "`" + `
-		}{ {{ .Package }}.{{ .TestCase.Name }} }
+		}{ {{ .Package }}.{{ .TestCase.Name }}() }
 		err := json.Unmarshal(rawData, &v)
 		require.Nil(t, err)
 		assert.EqualValues(t, "{{ .TestCase.Value }}", v.A.String())
@@ -203,20 +204,20 @@ func Test{{ .StructName }}_ForEach(t *testing.T) {
 
 func Test{{ .StructName }}_TextCodec(t *testing.T) {
 	t.Run("MarshalText_Valid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		data, err := c.TestValue.MarshalText()
 		require.Nil(t, err)
 		require.True(t, len(data) > 0)
 	})
 	t.Run("UnmarshalText_Valid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.UnmarshalText([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), c.TestValue.String())
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.UnmarshalText([]byte(""))
 		require.NoError(t, err)
 		err = c.TestValue.UnmarshalText([]byte("{{ .TestCase.InvalidValue }}"))
@@ -225,50 +226,50 @@ func Test{{ .StructName }}_TextCodec(t *testing.T) {
 }
 
 func Test{{ .StructName }}_Stringer(t *testing.T) {
-	c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+	c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 	require.EqualValues(t, "{{ .TestCase.Value }}", c.TestValue.String())
 }
 
 func Test{{ .StructName }}_DriverValues(t *testing.T) {
 	t.Run("Scan_String", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
-		require.Nil(t, c.TestValue.Scan({{ .Package }}.{{ .TestCase.Name }}.String()))
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
+		require.Nil(t, c.TestValue.Scan({{ .Package }}.{{ .TestCase.Name }}().String()))
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), c.TestValue.String())
 	})
 	t.Run("Scan_Bytes", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
-		require.Nil(t, c.TestValue.Scan([]byte({{ .Package }}.{{ .TestCase.Name }}.String())))
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
+		require.Nil(t, c.TestValue.Scan([]byte({{ .Package }}.{{ .TestCase.Name }}().String())))
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), c.TestValue.String())
 	})
 	t.Run("Scan_Invalid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		require.NotNil(t, c.TestValue.Scan(1))
 	})
 	t.Run("Scan_Invalid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		v, err := c.TestValue.Value()
 		assert.Nil(t, err)
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), fmt.Sprintf("%v", v))
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), fmt.Sprintf("%v", v))
 	})
 }
 
 func Test{{ .StructName }}_BinaryCodec(t *testing.T) {
 	t.Run("MarshalBinary_Valid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		data, err := c.TestValue.MarshalBinary()
 		require.Nil(t, err)
 		assert.Len(t, data, {{ .TestCase.BinaryLen }})
 	})
 	t.Run("UnmarshalBinary_Valid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.UnmarshalBinary([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), c.TestValue.String())
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.UnmarshalBinary(nil)
 		require.NoError(t, err)
 		err = c.TestValue.UnmarshalBinary([]byte("{{ .TestCase.InvalidValue }}"))
@@ -278,20 +279,20 @@ func Test{{ .StructName }}_BinaryCodec(t *testing.T) {
 
 func Test{{ .StructName }}_GobCodec(t *testing.T) {
 	t.Run("MarshalBinary_Valid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		data, err := c.TestValue.GobEncode()
 		require.Nil(t, err)
 		assert.Len(t, data, {{ .TestCase.BinaryLen }})
 	})
 	t.Run("UnmarshalBinary_Valid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.GobDecode([]byte("{{ .TestCase.Value }}"))
 		require.Nil(t, err)
-		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}.String(), c.TestValue.String())
+		require.EqualValues(t, {{ .Package }}.{{ .TestCase.Name }}().String(), c.TestValue.String())
 	})
 	t.Run("UnmarshalText_Invalid", func(t *testing.T) {
-		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c := &foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 		err := c.TestValue.GobDecode(nil)
 		require.NoError(t, err)
 		err = c.TestValue.GobDecode([]byte("{{ .TestCase.InvalidValue }}"))
@@ -301,7 +302,7 @@ func Test{{ .StructName }}_GobCodec(t *testing.T) {
 
 func Test{{ .StructName }}_MarshalBSON(t *testing.T) {
 	t.Run("MarshalBSON_Valid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		data, err := c.TestValue.MarshalBSON()
 		require.Nil(t, err)
@@ -311,7 +312,7 @@ func Test{{ .StructName }}_MarshalBSON(t *testing.T) {
 
 func Test{{ .StructName }}_UnmarshalBSON(t *testing.T) {
 	t.Run("UnmarshalBSON_Valid", func(t *testing.T) {
-		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }} }
+		c :=foo{{ .StructName }}{TestValue: {{ .Package }}.{{ .TestCase.Name }}() }
 
 		v1 := &c
 		rawData, err := bson.Marshal(v1)
