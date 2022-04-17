@@ -6,6 +6,14 @@
 
 # go-enum -  Typesafe enum generation in golang
 
+## Update 2022
+
+Go 1.18 is out, with generics support: https://go.dev/blog/why-generics
+
+Having said that, I haven't yet explored the syntax and semantics to work on a new way around to the problem of enumerations but still, I'd like to consider this package deprecated (as someone else will probable figure that out in a nice generic enum package :shipit:)
+
+## Intro
+
 This package provides a scaffolding mechanism to generate enum types based on string values, in contrast with the _iota_ based integer constants enum pattern commonly used in Go
 
 Use this package if you wish to have type support for:
